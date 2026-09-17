@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Hunt Puzzle</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #211936, #503767);
+    color: white;
+}
+
+h1 {
+    color: #9ef5ff;
+    margin-bottom: 5px;
+}
+
+p {
+    color: #d5cce7;
+    font-size: 13px;
+}
+
+.card {
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255,255,255,.1);
+    border-radius: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* LEVELS */
+
+.levels {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.levels button,
+.start-btn,
+.action-btn {
+    padding: 12px 22px;
+    border: none;
+    border-radius: 25px;
+    background: #393052;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.levels button.selected {
+    background: #73e8ef;
+    color: #211936;
+}
+
+.start-btn,
+.action-btn {
+    margin-top: 20px;
+    background: linear-gradient(90deg, #73e8ef, #ae8cff);
+    color: #211936;
+}
+
+/* GAME HEADER */
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.game-header h2 {
+    font-size: 20px;
+}
+
+.timer-box {
+    background: #171329;
+    padding: 8px 15px;
+    border-radius: 10px;
+}
+
+.timer-box small {
+    display: block;
+    font-size: 10px;
+    color: #aaa4c4;
+}
+
+#timer {
+    color: #9ef5ff;
+    font-size: 24px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+}
+
+.next {
+    margin: 15px;
+    color: #d9d2e9;
+}
+
+#nextNumber {
+    color: #9ef5ff;
+    font-size: 25px;
+}
+
+/* PROGRESS */
+
+.progress {
+    height: 7px;
+    background: #211936;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #65e5bd;
+    transition: width .2s;
+}
+
+/* SMALL PAGE */
+
+.paper {
+    width: 100%;
+    max-width: 600px;
+    height: 500px;
+    margin: auto;
+    padding: 10px;
+    background: #fffdf5;
+    border: 5px solid #a99bbd;
+    border-radius: 5px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.3);
+
+    /*
+      CSS GRID:
+      Every number gets its own cell.
+      Numbers cannot overlap each other.
+    */
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 2px;
+}
+
+.number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+
+    color: #292336;
+    font-family: Georgia, serif;
+    font-size: clamp(10px, 1.8vw, 17px);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.number:hover:not(.found) {
+    color: #1685a4;
+    text-decoration: underline;
+}
+
+.number.found {
+    color: #b9b4aa;
+    text-decoration: line-through;
+    cursor: default;
+}
+
+.number.wrong {
+    color: #e34d72;
+}
+
+.bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.quit {
+    border: 1px solid #8c7da7;
+    border-radius: 20px;
+    padding: 8px 16px;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+}
+
+.result h2 {
+    color: #9ef5ff;
+}
+
+.result strong {
+    color: #9ef5ff;
+    font-size: 25px;
+}
+
+@media(max-width: 500px) {
+    body {
+        padding: 8px;
+    }
+
+    .card {
+        padding: 12px;
+    }
+
+    .paper {
+        height: 400px;
+        border-width: 3px;
+        gap: 1px;
+    }
+
+    .number {
+        font-size: 11px;
+    }
+
+    .game-header h2 {
+        font-size: 16px;
+    }
+
+    #timer {
+        font-size: 19px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔢 NUMBER HUNT</h1>
+<p>Find numbers from 1 to 100 in the correct order!</p>
+
+<!-- LEVEL SCREEN -->
+
+<section class="card" id="levelScreen">
+
+    <h2>Choose Your Level</h2>
+
+    <div class="levels">
+
+        <button class="selected" onclick="selectLevel('easy', this)">
+            Easy
+        </button>
+
+        <button onclick="selectLevel('medium', this)">
+            Medium
+        </button>
+
+        <button onclick="selectLevel('hard', this)">
+            Hard
+        </button>
+
+    </div>
+
+    <p id="description">
+        Easy: Numbers are larger and easier to read.
+    </p>
+
+    <button class="start-btn" onclick="startGame()">
+        START GAME 🚀
+    </button>
+
+</section>
+
+<!-- GAME SCREEN -->
+
+<section class="card hidden" id="gameScreen">
+
+    <div class="game-header">
+        <h2 id="levelTitle">Easy Level</h2>
+
+        <div class="timer-box">
+            <small>TIME</small>
+            <span id="timer">00:00</span>
+        </div>
+    </div>
+
+    <div class="next">
+        FIND:
+        <strong id="nextNumber">1</strong>
+    </div>
+
+    <div class="progress">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- NUMBERS WITHOUT BOXES OR OVERLAPPING -->
+
+    <div class="paper" id="paper"></div>
+
+    <div class="bottom">
+        <span>Found: <strong id="found">0/100</strong></span>
+
+        <button class="quit" onclick="quitGame()">Quit</button>
+    </div>
+
+</section>
+
+<!-- RESULT SCREEN -->
+
+<section class="card hidden" id="resultScreen">
+
+    <div class="result">
+
+        <h2>🎉 You Finished!</h2>
+
+        <p>You found all 100 numbers.</p>
+
+        <p>
+            Time Taken:
+            <strong id="finalTime">00:00</strong>
+        </p>
+
+        <p>
+            Mistakes:
+            <strong id="finalMistakes">0</strong>
+        </p>
+
+        <button class="action-btn" onclick="startGame()">
+            🔄 Play Again
+        </button>
+
+        <button class="action-btn" onclick="chooseLevel()">
+            Choose Level
+        </button>
+
+    </div>
+
+</section>
+
+<script>
+let selectedLevel = "easy";
+let currentNumber = 1;
+let foundCount = 0;
+let mistakes = 0;
+let seconds = 0;
+let timerInterval = null;
+let gameActive = false;
+
+const settings = {
+    easy: {
+        name: "Easy",
+        fontSize: 18,
+        description: "Easy: Numbers are larger and easier to read."
+    },
+
+    medium: {
+        name: "Medium",
+        fontSize: 15,
+        description: "Medium: Numbers are smaller."
+    },
+
+    hard: {
+        name: "Hard",
+        fontSize: 12,
+        description: "Hard: Numbers are very small."
+    }
+};
+
+/* SELECT LEVEL */
+
+function selectLevel(level, button) {
+
+    selectedLevel = level;
+
+    document.querySelectorAll(".levels button").forEach(btn => {
+        btn.classList.remove("selected");
+    });
+
+    button.classList.add("selected");
+
+    document.getElementById("description").textContent =
+        settings[level].description;
+}
+
+/* START GAME */
+
+function startGame() {
+
+    clearInterval(timerInterval);
+
+    currentNumber = 1;
+    foundCount = 0;
+    mistakes = 0;
+    seconds = 0;
+    gameActive = true;
+
+    document.getElementById("levelScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
+    document.getElementById("gameScreen").classList.remove("hidden");
+
+    document.getElementById("levelTitle").textContent =
+        settings[selectedLevel].name + " Level";
+
+    updateStats();
+    updateTimer();
+    createNumbers();
+
+    timerInterval = setInterval(() => {
+
+        if (gameActive) {
+            seconds++;
+            updateTimer();
+        }
+
+    }, 1000);
+}
+
+/* CREATE NUMBERS */
+
+function createNumbers() {
+
+    const paper = document.getElementById("paper");
+
+    paper.innerHTML = "";
+
+    let numbers = [];
+
+    for (let i = 1; i <= 100; i++) {
+        numbers.push(i);
+    }
+
+    // Shuffle numbers randomly
+    for (let i = numbers.length - 1; i > 0; i--) {
+
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+
+        [numbers[i], numbers[randomIndex]] =
+        [numbers[randomIndex], numbers[i]];
+    }
+
+    numbers.forEach(number => {
+
+        const button = document.createElement("button");
+
+        button.className = "number";
+        button.textContent = number;
+
+        button.style.fontSize =
+            settings[selectedLevel].fontSize + "px";
+
+        // Each button occupies one separate grid cell.
+        button.addEventListener("click", () => {
+            checkNumber(number, button);
+        });
+
+        paper.appendChild(button);
+    });
+}
+
+/* CHECK NUMBER */
+
+function checkNumber(number, button) {
+
+    if (!gameActive || button.classList.contains("found")) {
+        return;
+    }
+
+    if (number === currentNumber) {
+
+        button.classList.add("found");
+
+        foundCount++;
+        currentNumber++;
+
+        updateStats();
+
+        if (currentNumber > 100) {
+            finishGame();
+        }
+
+    } else {
+
+        mistakes++;
+
+        button.classList.add("wrong");
+
+        setTimeout(() => {
+            button.classList.remove("wrong");
+        }, 300);
+
+        updateStats();
+    }
+}
+
+/* UPDATE STATS */
+
+function updateStats() {
+
+    document.getElementById("found").textContent =
+        foundCount + "/100";
+
+    document.getElementById("nextNumber").textContent =
+        currentNumber <= 100 ? currentNumber : "DONE";
+
+    document.getElementById("progressFill").style.width =
+        foundCount + "%";
+}
+
+/* TIMER COUNTS UPWARD */
+
+function updateTimer() {
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    document.getElementById("timer").textContent =
+        String(minutes).padStart(2, "0") + ":" +
+        String(secs).padStart(2, "0");
+}
+
+/* FINISH */
+
+function finishGame() {
+
+    gameActive = false;
+    clearInterval(timerInterval);
+
+    document.getElementById("gameScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.remove("hidden");
+
+    document.getElementById("finalTime").textContent =
+        formatTime(seconds);
+
+    document.getElementById("finalMistakes").textContent =
+        mistakes;
+}
+
+/* FORMAT TIME */
+
+function formatTime(totalSeconds) {
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+
+    return String(minutes).padStart(2, "0") + ":" +
+        String(secs).padStart(2, "0");
+}
+
+/* CHOOSE LEVEL */
+
+function chooseLevel() {
+
+    clearInterval(timerInterval);
+    gameActive = false;
+
+    document.getElementById("gameScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
+    document.getElementById("levelScreen").classList.remove("hidden");
+}
+
+/* QUIT */
+
+function quitGame() {
+
+    if (confirm("Do you want to quit the game?")) {
+
+        clearInterval(timerInterval);
+        gameActive = false;
+
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById("levelScreen").classList.remove("hidden");
+    }
+}
+</script>
+
+</body>
+</html>
